@@ -364,11 +364,11 @@ function HomePage() {
                     key={type}
                     type="button"
                     onClick={() => setUploadType(type)}
-                    className={`toggle-button ${uploadType === type ? 'active' : ''} py-5 rounded-2xl font-bold text-lg relative z-0`}
+                    className={`toggle-button ${uploadType === type ? 'active' : ''} py-8 rounded-2xl font-bold text-3xl relative z-0`}
                     style={{ fontFamily: "'Syne', sans-serif" }}
                   >
-                    <span className="relative z-10 flex items-center justify-center gap-3">
-                      <span className="text-3xl">{type === "text" ? "📝" : "📁"}</span>
+                    <span className="relative z-10 flex items-center justify-center gap-4">
+                      <span className="text-5xl">{type === "text" ? "📝" : "📁"}</span>
                       <span className="capitalize">{type}</span>
                     </span>
                   </button>
@@ -386,7 +386,7 @@ function HomePage() {
                       onChange={(e) => setTextContent(e.target.value)}
                       rows={12}
                       placeholder="Paste your secret text here..."
-                      className="glass-input w-full rounded-2xl p-6 text-gray-100 text-lg placeholder-gray-400 focus:outline-none resize-none"
+                      className="glass-input w-full rounded-2xl p-6 text-white text-xl placeholder-white focus:outline-none resize-none"
                       style={{
                         fontFamily: "'DM Sans', sans-serif"
                       }}
@@ -407,11 +407,11 @@ function HomePage() {
                         📤
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-white mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>
+                        <p className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>
                           {selectedFile ? selectedFile.name : "Drop your file here"}
                         </p>
                         {!selectedFile && (
-                          <p className="text-gray-400 text-sm">
+                          <p className="text-gray-400 text-lg">
                             or click to browse • Any file type
                           </p>
                         )}
@@ -429,7 +429,7 @@ function HomePage() {
                     border: '1px solid rgba(255, 255, 255, 0.1)'
                   }}
                 >
-                  <label className="block text-base font-bold text-gray-300 mb-3" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  <label className="block text-xl font-bold text-gray-300 mb-3" style={{ fontFamily: "'Syne', sans-serif" }}>
                     ⏱️ Link Expiry Time (minutes)
                   </label>
                   <input
@@ -437,7 +437,7 @@ function HomePage() {
                     min="1"
                     value={expiryMinutes}
                     onChange={(e) => setExpiryMinutes(e.target.value)}
-                    className="glass-input w-full rounded-xl px-5 py-4 text-white text-lg font-semibold focus:outline-none"
+                    className="glass-input w-full rounded-xl px-5 py-4 text-white text-2xl font-semibold focus:outline-none"
                   />
                 </div>
 
@@ -445,11 +445,11 @@ function HomePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="neon-button w-full py-5 rounded-2xl font-black text-xl text-white relative disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="neon-button w-full py-6 rounded-2xl font-black text-2xl text-white relative disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: "'Syne', sans-serif" }}
                 >
                   <span className="relative z-10 flex items-center justify-center gap-3">
-                    <span className="text-3xl">{loading ? "⏳" : "🚀"}</span>
+                    <span className="text-4xl">{loading ? "⏳" : "🚀"}</span>
                     {loading ? "Creating Vault..." : "Generate Secure Link"}
                   </span>
                 </button>
@@ -480,7 +480,7 @@ function HomePage() {
                       type="text"
                       readOnly
                       value={result.shareUrl}
-                      className="flex-1 rounded-xl px-5 py-4 text-gray-200 text-base font-mono"
+                      className="flex-1 rounded-xl px-5 py-4 text-gray-200 text-lg font-mono"
                       style={{
                         background: 'rgba(0, 0, 0, 0.4)',
                         backdropFilter: 'blur(10px)',
@@ -489,7 +489,7 @@ function HomePage() {
                     />
                     <button
                       onClick={copyToClipboard}
-                      className="copy-button px-8 py-4 rounded-xl text-white font-bold text-base"
+                      className="copy-button px-10 py-4 rounded-xl text-white font-bold text-xl"
                     >
                       {copied ? "✓ Copied!" : "Copy Link"}
                     </button>
