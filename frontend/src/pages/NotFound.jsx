@@ -1,18 +1,23 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 function NotFound() {
   const navigate = useNavigate();
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="bg-white rounded-lg shadow-xl p-8 text-center">
-        <h1 className="text-6xl mb-4">404</h1>
-        <p className="text-xl mb-6">Page Not Found</p>
+    <div className="lv-shell flex min-h-[60vh] items-center justify-center">
+      <div className="lv-card rounded-3xl p-10 text-center space-y-4">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+          Error 404
+        </p>
+        <h1 className="text-4xl font-semibold">Page not found</h1>
+        <p className="text-sm text-slate-400">
+          That vault does not exist or the link has expired.
+        </p>
         <button
-          onClick={() => navigate('/')}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg"
+          onClick={() => navigate("/")}
+          className="lv-button lv-button-primary px-6 py-3 text-sm text-slate-900"
         >
-          Go Home
+          Back to home
         </button>
       </div>
     </div>

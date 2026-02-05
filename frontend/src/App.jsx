@@ -6,11 +6,17 @@ import NotFound from "./pages/NotFound";
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0f14] via-[#12121a] to-black text-gray-100">
-        <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="lv-app">
+        <div className="lv-bg" aria-hidden="true">
+          <span className="lv-orb lv-orb-1" />
+          <span className="lv-orb lv-orb-2" />
+          <span className="lv-orb lv-orb-3" />
+          <span className="lv-grid" />
+        </div>
+        <div className="lv-content">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/view/:id" element={<ViewPage />} />
+            <Route path="/view/:uniqueId" element={<ViewPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
