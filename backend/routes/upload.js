@@ -4,6 +4,15 @@ const multer = require('multer');
 const { nanoid } = require('nanoid');
 const Content = require('../models/Content');
 const path = require('path');
+const crypto = require('crypto');
+
+const hashPassword = (rawPassword) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto
+    .pbkdf2Sync(String(rawPassword), salt, 100000, 64, 'sha512')
+    .toString('hex');
+  return `${salt}:${hash}`;
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -24,7 +33,7 @@ const upload = multer({
 
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    const { type, content, expiryMinutes } = req.body;
+    const { type, content, expiryMinutes, password, oneTimeView, maxViews } = req.body;
 
     if (!type || (type !== 'text' && type !== 'file')) {
       return res.status(400).json({ error: 'Invalid type' });
@@ -48,6 +57,21 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       expiresAt
     };
 
+    if (password && String(password).trim()) {
+      contentData.password = hashPassword(password);
+    }
+
+    if (oneTimeView === 'true' || oneTimeView === true) {
+      contentData.oneTimeView = true;
+    }
+
+    if (maxViews !== undefined && maxViews !== null && String(maxViews).trim()) {
+      const parsedMaxViews = parseInt(maxViews, 10);
+      if (!Number.isNaN(parsedMaxViews) && parsedMaxViews > 0) {
+        contentData.maxViews = parsedMaxViews;
+      }
+    }
+
     if (type === 'text') {
       contentData.content = content;
     } else {
@@ -60,7 +84,11 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const newContent = new Content(contentData);
     await newContent.save();
 
-    const shareUrl = `${req.protocol}://${req.get('host')}/view/${uniqueId}`;
+    const rawFrontendUrl = process.env.FRONTEND_URL;
+    const frontendBase = rawFrontendUrl
+      ? rawFrontendUrl.replace(/\/+$/, '')
+      : `${req.protocol}://${req.get('host')}`;
+    const shareUrl = `${frontendBase}/view/${uniqueId}`;
 
     res.status(201).json({
       success: true,

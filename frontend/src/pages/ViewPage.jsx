@@ -23,18 +23,57 @@ function ViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [password, setPassword] = useState("");
+  const [requiresPassword, setRequiresPassword] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [remainingViews, setRemainingViews] = useState(null);
+  const [viewLimitLabel, setViewLimitLabel] = useState("");
+
+  const fetchContent = async (overridePassword = "") => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await axios.get(`${API_URL}/content/${uniqueId}`, {
+        headers: overridePassword
+          ? { "x-vault-password": overridePassword }
+          : password
+          ? { "x-vault-password": password }
+          : undefined,
+      });
+      setContent(response.data);
+      setRequiresPassword(Boolean(response.data.requiresPassword));
+      if (response.data.oneTimeView) {
+        setRemainingViews(1);
+        setViewLimitLabel("One-time view");
+      } else if (response.data.maxViews) {
+        const remaining = Math.max(
+          0,
+          response.data.maxViews - (response.data.viewCount || 0)
+        );
+        setRemainingViews(remaining);
+        setViewLimitLabel(`Max ${response.data.maxViews} views`);
+      } else {
+        setRemainingViews(null);
+        setViewLimitLabel("");
+      }
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 410) {
+        setError("This vault has expired");
+      } else if (status === 403) {
+        setError("This link is invalid or no longer accessible");
+      } else if (status === 401) {
+        setRequiresPassword(true);
+        setError(err.response?.data?.error || "Password required");
+      } else {
+        setError(err.response?.data?.error || "Failed to load content");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/content/${uniqueId}`);
-        setContent(response.data);
-      } catch (err) {
-        setError(err.response?.data?.error || "Failed to load content");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchContent();
   }, [uniqueId]);
 
@@ -49,6 +88,39 @@ function ViewPage() {
     }
   };
 
+  const handleDownload = async () => {
+    if (!content) return;
+    setDownloadLoading(true);
+    setError("");
+    try {
+      const response = await axios.get(
+        `${API_URL}/download/${uniqueId}`,
+        {
+          headers: password ? { "x-vault-password": password } : undefined,
+          responseType: "blob",
+        }
+      );
+      const blobUrl = window.URL.createObjectURL(response.data);
+      const anchor = document.createElement("a");
+      anchor.href = blobUrl;
+      anchor.download = content.fileName || "download";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 401) {
+        setRequiresPassword(true);
+        setError("Password required to download");
+      } else {
+        setError(err.response?.data?.error || "Download failed");
+      }
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="lv-shell flex min-h-[60vh] items-center justify-center text-sm text-slate-300">
@@ -57,15 +129,24 @@ function ViewPage() {
     );
   }
 
-  if (error) {
+  if (error && !requiresPassword) {
     return (
-      <div className="lv-shell flex min-h-[60vh] items-center justify-center px-4">
-        <div className="lv-card rounded-3xl p-8 text-center space-y-4">
-          <h2 className="text-2xl font-semibold text-red-300">
+      <div className="lv-shell space-y-8">
+        <header className="text-center lv-fade-in">
+          <div className="inline-flex items-center gap-3 rounded-full px-4 py-2 lv-chip text-xs uppercase tracking-[0.2em]">
+            Vault access
+          </div>
+          <h1 className="mt-6 text-3xl md:text-4xl font-bold lv-gradient-text">
             {error}
-          </h2>
-          <p className="text-sm text-slate-400">
+          </h1>
+          <p className="mt-3 text-sm text-slate-400">
             This vault may have expired or the link was mistyped.
+          </p>
+        </header>
+
+        <div className="lv-card rounded-3xl p-8 text-center space-y-4 lv-rise">
+          <p className="text-sm text-slate-300">
+            Head back to create a fresh, secure share.
           </p>
           <button
             onClick={() => navigate("/")}
@@ -79,12 +160,12 @@ function ViewPage() {
   }
 
   return (
-    <div className="lv-shell space-y-8">
-      <header className="text-center">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+    <div className="lv-shell space-y-10">
+      <header className="text-center lv-fade-in">
+        <div className="inline-flex items-center gap-3 rounded-full px-4 py-2 lv-chip text-xs uppercase tracking-[0.2em]">
           Secure access granted
-        </p>
-        <h1 className="mt-3 text-3xl md:text-4xl font-semibold">
+        </div>
+        <h1 className="mt-6 text-3xl md:text-5xl font-bold lv-gradient-text">
           Vault Content
         </h1>
         {content?.expiresAt && (
@@ -92,9 +173,47 @@ function ViewPage() {
             Expires at {new Date(content.expiresAt).toLocaleString()}
           </p>
         )}
+        {remainingViews !== null && (
+          <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
+            <span className="lv-chip rounded-full px-3 py-1">
+              Remaining views: {remainingViews}
+            </span>
+            {viewLimitLabel && (
+              <span className="lv-chip rounded-full px-3 py-1">
+                {viewLimitLabel}
+              </span>
+            )}
+          </div>
+        )}
       </header>
 
-      <div className="lv-card rounded-3xl p-6 md:p-8 space-y-6">
+      <div className="lv-card rounded-3xl p-6 md:p-8 space-y-6 lv-rise">
+        {requiresPassword && (
+          <div className="lv-panel rounded-2xl p-5 space-y-3">
+            <label className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              Password Required
+            </label>
+            <div className="flex flex-col md:flex-row gap-3">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter vault password"
+                className="lv-input flex-1 rounded-xl px-4 py-3 text-base"
+              />
+              <button
+                onClick={() => fetchContent(password)}
+                className="lv-button lv-button-primary px-5 py-3 text-sm text-slate-900"
+              >
+                Unlock
+              </button>
+            </div>
+            {error && (
+              <p className="text-xs text-red-300">{error}</p>
+            )}
+          </div>
+        )}
+
         {content?.type === "text" && (
           <>
             <pre className="lv-panel rounded-2xl p-4 text-sm text-slate-200 overflow-x-auto max-h-[65vh]">
@@ -122,12 +241,13 @@ function ViewPage() {
                 {formatBytes(content.fileSize)} • {content.mimeType || "Unknown type"}
               </p>
             </div>
-            <a
-              href={`${API_URL}/download/${uniqueId}`}
+            <button
+              onClick={handleDownload}
               className="lv-button lv-button-primary px-5 py-3 text-sm text-slate-900"
+              disabled={downloadLoading}
             >
-              Download
-            </a>
+              {downloadLoading ? "Preparing..." : "Download"}
+            </button>
           </div>
         )}
       </div>
