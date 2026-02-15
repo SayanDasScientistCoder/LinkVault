@@ -82,10 +82,7 @@ Detailed field-by-field schema documentation is available in:
 - File size limit and file type validation
 - User-based access control (optional email allowlist)
 - Per-user active links list in UI
-
-## Not Implemented (Bonus)
-- Background/cron cleanup job for expired records
-  - Current cleanup is access-time driven (expired records are removed when requested)
+- Background job for automatic deletion of expired records/files
 
 ## Environment Variables
 
@@ -95,6 +92,7 @@ Create backend `.env` at `backend/.env`:
 PORT=5000
 MONGODB_URI=mongodb://127.0.0.1:27017/linkvault
 FRONTEND_URL=http://localhost:5173
+EXPIRED_CONTENT_CLEANUP_INTERVAL_MS=60000
 ```
 
 Frontend env is optional. If not set, frontend defaults API to `http://localhost:5000/api`.
@@ -332,7 +330,7 @@ Base URL: `/api`
 - MongoDB for flexible document schema and quick indexing
 - `nanoid` IDs for short, hard-to-guess share URLs
 - Local disk storage for simplicity in local setup
-- Request-time expiry cleanup to keep implementation simple
+- Scheduled background cleanup for expiry-driven deletion
 - Token-based auth with hashed session token in DB
 - Owner delete protected by both account identity and delete token
 
@@ -346,7 +344,6 @@ Base URL: `/api`
 
 ### Limitations
 
-- No background scheduler for automatic expiry cleanup
 - Local uploads are not durable for ephemeral/free cloud instances
 - No rate limiting or abuse throttling currently
 - No email verification/reset flow

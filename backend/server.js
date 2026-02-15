@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const mongoose = require('mongoose');
+const { startExpiredContentCleanup } = require('./jobs/cleanupExpiredContent');
 
 const uploadRoutes = require('./routes/upload');
 const contentRoutes = require('./routes/content');
@@ -44,6 +45,11 @@ app.use((req, res) => {
 mongoose.set('bufferCommands', false);
 
 const PORT = process.env.PORT || 5000;
+const CLEANUP_INTERVAL_MS =
+  Number(process.env.EXPIRED_CONTENT_CLEANUP_INTERVAL_MS) || 60 * 1000;
+const uploadsPath = path.join(__dirname, 'uploads');
+let stopCleanupJob = () => {};
+let server;
 
 mongoose
   .connect(process.env.MONGODB_URI, {
@@ -51,7 +57,11 @@ mongoose
   })
   .then(() => {
     console.log('Local MongoDB connected');
-    app.listen(PORT, () => {
+    stopCleanupJob = startExpiredContentCleanup({
+      uploadsDir: uploadsPath,
+      intervalMs: CLEANUP_INTERVAL_MS,
+    });
+    server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
@@ -59,3 +69,16 @@ mongoose
     console.error('MongoDB connection failed:', err.message);
     process.exit(1);
   });
+
+const shutdown = (signal) => {
+  console.log(`${signal} received. Shutting down...`);
+  stopCleanupJob();
+  if (server) {
+    server.close(() => process.exit(0));
+  } else {
+    process.exit(0);
+  }
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
