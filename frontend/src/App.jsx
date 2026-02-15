@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ViewPage from "./pages/ViewPage";
+import DeletePage from "./pages/DeletePage";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/view/:uniqueId" element={<ViewPage />} />
+            <Route path="/delete/:uniqueId/:deleteToken" element={<DeletePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

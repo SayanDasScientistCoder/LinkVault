@@ -90,9 +90,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const frontendBase = rawFrontendUrl
       ? rawFrontendUrl.replace(/\/+$/, '')
       : `${req.protocol}://${req.get('host')}`;
-    const backendBase = `${req.protocol}://${req.get('host')}`;
     const shareUrl = `${frontendBase}/view/${uniqueId}`;
-    const deleteUrl = `${backendBase}/api/delete/${uniqueId}/${encodeURIComponent(deleteToken)}`;
+    const deleteUrl = `${frontendBase}/delete/${uniqueId}/${encodeURIComponent(deleteToken)}`;
 
     res.status(201).json({
       success: true,

@@ -68,23 +68,56 @@ const verifyDeleteToken = (content, provided) => {
 };
 
 router.get('/delete/:uniqueId/:deleteToken', async (req, res) => {
+  const { uniqueId, deleteToken } = req.params;
+  const rawFrontendUrl = process.env.FRONTEND_URL;
+  const frontendBase = rawFrontendUrl
+    ? rawFrontendUrl.replace(/\/+$/, '')
+    : `${req.protocol}://${req.get('host')}`;
+  return res.redirect(`${frontendBase}/delete/${encodeURIComponent(uniqueId)}/${encodeURIComponent(deleteToken)}`);
+});
+
+router.get('/delete-preview/:uniqueId/:deleteToken', async (req, res) => {
   try {
     const { uniqueId, deleteToken } = req.params;
     const content = await Content.findOne({ uniqueId });
 
     if (!content) {
-      return res.status(404).send('Content not found or already deleted');
+      return res.status(404).json({ error: 'Content not found or expired' });
+    }
+
+    if (content.isExpired()) {
+      await Content.deleteOne({ uniqueId });
+      return res.status(410).json({ error: 'Content has expired' });
     }
 
     if (!verifyDeleteToken(content, deleteToken)) {
-      return res.status(403).send('Invalid delete token');
+      return res.status(403).json({ error: 'Invalid delete token' });
     }
 
-    await Content.deleteOne({ uniqueId });
-    return res.status(200).send('Vault deleted successfully');
+    if (content.type === 'text') {
+      return res.json({
+        success: true,
+        type: 'text',
+        content: content.content,
+        expiresAt: content.expiresAt,
+        fileName: null,
+        fileSize: null,
+        mimeType: null
+      });
+    }
+
+    return res.json({
+      success: true,
+      type: 'file',
+      content: null,
+      expiresAt: content.expiresAt,
+      fileName: content.fileName,
+      fileSize: content.fileSize,
+      mimeType: content.mimeType
+    });
   } catch (error) {
-    console.error('Delete link error:', error);
-    return res.status(500).send('Delete failed');
+    console.error('Delete preview error:', error);
+    return res.status(500).json({ error: 'Failed to load delete preview' });
   }
 });
 
