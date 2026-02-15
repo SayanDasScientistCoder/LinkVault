@@ -50,12 +50,12 @@ mongoose
     serverSelectionTimeoutMS: 5000,
   })
   .then(() => {
-    console.log('✅ Local MongoDB connected');
+    console.log('Local MongoDB connected');
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error('❌ MongoDB connection failed:', err.message);
+    console.error('MongoDB connection failed:', err.message);
     process.exit(1);
   });
