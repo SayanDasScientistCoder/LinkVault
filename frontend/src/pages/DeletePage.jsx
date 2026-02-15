@@ -36,7 +36,9 @@ function DeletePage() {
       setVault(response.data);
     } catch (err) {
       const status = err.response?.status;
-      if (status === 410) {
+      if (err.response?.data?.authRequired) {
+        navigate(`/auth?next=${encodeURIComponent(`/delete/${uniqueId}/${deleteToken}`)}`, { replace: true });
+      } else if (status === 410) {
         setError("This vault has already expired.");
       } else if (status === 403) {
         setError("Invalid delete link.");
@@ -63,7 +65,11 @@ function DeletePage() {
       });
       setDeleted(true);
     } catch (err) {
-      setError(err.response?.data?.error || "Delete failed.");
+      if (err.response?.data?.authRequired) {
+        navigate(`/auth?next=${encodeURIComponent(`/delete/${uniqueId}/${deleteToken}`)}`, { replace: true });
+      } else {
+        setError(err.response?.data?.error || "Delete failed.");
+      }
     } finally {
       setDeleting(false);
     }
@@ -86,7 +92,11 @@ function DeletePage() {
       anchor.remove();
       window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      setError(err.response?.data?.error || "Download failed.");
+      if (err.response?.data?.authRequired) {
+        navigate(`/auth?next=${encodeURIComponent(`/delete/${uniqueId}/${deleteToken}`)}`, { replace: true });
+      } else {
+        setError(err.response?.data?.error || "Download failed.");
+      }
     } finally {
       setDownloading(false);
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -19,6 +19,7 @@ function formatBytes(bytes) {
 function ViewPage() {
   const { uniqueId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,7 +59,9 @@ function ViewPage() {
       }
     } catch (err) {
       const status = err.response?.status;
-      if (status === 410) {
+      if (err.response?.data?.authRequired) {
+        navigate(`/auth?next=${encodeURIComponent(location.pathname)}`, { replace: true });
+      } else if (status === 410) {
         setError("This vault has expired");
       } else if (status === 403) {
         setError("This link is invalid or no longer accessible");
@@ -110,7 +113,9 @@ function ViewPage() {
       window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
       const status = err.response?.status;
-      if (status === 401) {
+      if (err.response?.data?.authRequired) {
+        navigate(`/auth?next=${encodeURIComponent(location.pathname)}`, { replace: true });
+      } else if (status === 401) {
         setRequiresPassword(true);
         setError("Password required to download");
       } else {

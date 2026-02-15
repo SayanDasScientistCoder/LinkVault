@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 
 const uploadRoutes = require('./routes/upload');
 const contentRoutes = require('./routes/content');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -15,12 +16,14 @@ const app = express();
 // --------------------
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // --------------------
 // API Routes
 // --------------------
 app.use('/api', uploadRoutes);
 app.use('/api', contentRoutes);
+app.use('/api', authRoutes);
 
 // --------------------
 // Serve Frontend (React SPA)

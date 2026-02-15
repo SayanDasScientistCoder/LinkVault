@@ -55,6 +55,12 @@ const contentSchema = new mongoose.Schema({
   deleteToken: {
     type: String,
     default: null
+  },
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+    index: true
   }
 });
 

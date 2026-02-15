@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const MAX_FILE_MB = 50;
@@ -18,6 +19,7 @@ function formatBytes(bytes) {
 }
 
 function HomePage() {
+  const navigate = useNavigate();
   const [uploadType, setUploadType] = useState("text");
   const [textContent, setTextContent] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
@@ -112,7 +114,11 @@ function HomePage() {
       setOneTimeView(false);
       setMaxViews("");
     } catch (err) {
-      setError(err.response?.data?.error || "Upload failed");
+      if (err.response?.data?.authRequired) {
+        navigate("/auth", { replace: true });
+      } else {
+        setError(err.response?.data?.error || "Upload failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -162,7 +168,11 @@ function HomePage() {
       setDeleteStatus("Vault deleted successfully.");
       setResult((prev) => (prev ? { ...prev, deleted: true } : prev));
     } catch (err) {
-      setDeleteStatus(err.response?.data?.error || "Delete failed.");
+      if (err.response?.data?.authRequired) {
+        navigate("/auth", { replace: true });
+      } else {
+        setDeleteStatus(err.response?.data?.error || "Delete failed.");
+      }
     }
   };
 

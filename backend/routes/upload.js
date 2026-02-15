@@ -5,6 +5,7 @@ const { nanoid } = require('nanoid');
 const Content = require('../models/Content');
 const path = require('path');
 const crypto = require('crypto');
+const { requireAuth } = require('../middleware/auth');
 
 const hashPassword = (rawPassword) => {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -31,7 +32,7 @@ const upload = multer({
   }
 });
 
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   try {
     const { type, content, expiryMinutes, password, oneTimeView, maxViews } = req.body;
 
@@ -56,7 +57,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       uniqueId,
       type,
       expiresAt,
-      deleteToken
+      deleteToken,
+      ownerId: req.user._id
     };
 
     if (password && String(password).trim()) {

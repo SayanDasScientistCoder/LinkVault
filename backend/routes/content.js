@@ -3,6 +3,7 @@ const router = express.Router();
 const Content = require('../models/Content');
 const path = require('path');
 const crypto = require('crypto');
+const { requireAuth } = require('../middleware/auth');
 
 const getPasswordFromRequest = (req) => {
   const headerPassword = req.headers['x-vault-password'];
@@ -67,6 +68,11 @@ const verifyDeleteToken = (content, provided) => {
   }
 };
 
+const canManageAsOwner = (content, user) => {
+  if (!content.ownerId) return true;
+  return String(content.ownerId) === String(user._id);
+};
+
 router.get('/delete/:uniqueId/:deleteToken', async (req, res) => {
   const { uniqueId, deleteToken } = req.params;
   const rawFrontendUrl = process.env.FRONTEND_URL;
@@ -76,7 +82,7 @@ router.get('/delete/:uniqueId/:deleteToken', async (req, res) => {
   return res.redirect(`${frontendBase}/delete/${encodeURIComponent(uniqueId)}/${encodeURIComponent(deleteToken)}`);
 });
 
-router.get('/delete-preview/:uniqueId/:deleteToken', async (req, res) => {
+router.get('/delete-preview/:uniqueId/:deleteToken', requireAuth, async (req, res) => {
   try {
     const { uniqueId, deleteToken } = req.params;
     const content = await Content.findOne({ uniqueId });
@@ -92,6 +98,10 @@ router.get('/delete-preview/:uniqueId/:deleteToken', async (req, res) => {
 
     if (!verifyDeleteToken(content, deleteToken)) {
       return res.status(403).json({ error: 'Invalid delete token' });
+    }
+
+    if (!canManageAsOwner(content, req.user)) {
+      return res.status(403).json({ error: 'Only the owner account can manage this vault' });
     }
 
     if (content.type === 'text') {
@@ -121,7 +131,7 @@ router.get('/delete-preview/:uniqueId/:deleteToken', async (req, res) => {
   }
 });
 
-router.get('/content/:uniqueId', async (req, res) => {
+router.get('/content/:uniqueId', requireAuth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     const content = await Content.findOne({ uniqueId });
@@ -184,7 +194,7 @@ router.get('/content/:uniqueId', async (req, res) => {
   }
 });
 
-router.get('/download/:uniqueId', async (req, res) => {
+router.get('/download/:uniqueId', requireAuth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     const content = await Content.findOne({ uniqueId });
@@ -211,7 +221,7 @@ router.get('/download/:uniqueId', async (req, res) => {
   }
 });
 
-router.get('/delete-download/:uniqueId/:deleteToken', async (req, res) => {
+router.get('/delete-download/:uniqueId/:deleteToken', requireAuth, async (req, res) => {
   try {
     const { uniqueId, deleteToken } = req.params;
     const content = await Content.findOne({ uniqueId });
@@ -229,6 +239,10 @@ router.get('/delete-download/:uniqueId/:deleteToken', async (req, res) => {
       return res.status(403).json({ error: 'Invalid delete token' });
     }
 
+    if (!canManageAsOwner(content, req.user)) {
+      return res.status(403).json({ error: 'Only the owner account can manage this vault' });
+    }
+
     const filePath = path.join(__dirname, '..', content.fileUrl);
     return res.download(filePath, content.fileName);
   } catch (error) {
@@ -237,7 +251,7 @@ router.get('/delete-download/:uniqueId/:deleteToken', async (req, res) => {
   }
 });
 
-router.delete('/content/:uniqueId', async (req, res) => {
+router.delete('/content/:uniqueId', requireAuth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     const content = await Content.findOne({ uniqueId });
@@ -249,6 +263,10 @@ router.delete('/content/:uniqueId', async (req, res) => {
     const providedToken = getDeleteTokenFromRequest(req);
     if (!verifyDeleteToken(content, providedToken)) {
       return res.status(403).json({ error: 'Invalid or missing delete token' });
+    }
+
+    if (!canManageAsOwner(content, req.user)) {
+      return res.status(403).json({ error: 'Only the owner account can manage this vault' });
     }
 
     const result = await Content.deleteOne({ uniqueId });
