@@ -1,0 +1,57 @@
+# LinkVault dependency + API requirement manifest
+# NOTE: This project is JavaScript/Node-based. pip cannot install these runtime deps.
+# Use the commands below instead:
+#   cd backend && npm install
+#   cd frontend && npm install
+
+[backend_runtime_libraries]
+cors@^2.8.6
+dotenv@^17.2.3
+express@^5.2.1
+mongoose@^8.22.0
+multer@^2.0.2
+nanoid@^3.3.4
+
+[backend_dev_libraries]
+nodemon@^3.1.11
+
+[frontend_runtime_libraries]
+axios@^1.13.4
+react@^19.2.0
+react-dom@^19.2.0
+react-router-dom@^6.30.3
+
+[frontend_dev_libraries]
+@eslint/js@^9.39.1
+@tailwindcss/postcss@^4.1.18
+@types/react@^19.2.5
+@types/react-dom@^19.2.3
+@vitejs/plugin-react@^5.1.1
+autoprefixer@^10.4.24
+eslint@^9.39.1
+eslint-plugin-react-hooks@^7.0.1
+eslint-plugin-react-refresh@^0.4.24
+globals@^16.5.0
+postcss@^8.5.6
+tailwindcss@^4.1.18
+vite@^7.2.4
+
+[required_api_endpoints]
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+POST /api/auth/logout
+POST /api/upload
+GET /api/content/mine
+GET /api/content/:uniqueId
+GET /api/download/:uniqueId
+GET /api/delete/:uniqueId/:deleteToken
+GET /api/delete-preview/:uniqueId/:deleteToken
+GET /api/delete-download/:uniqueId/:deleteToken
+DELETE /api/content/:uniqueId
+
+[required_environment_variables]
+PORT
+MONGODB_URI
+FRONTEND_URL
+VITE_API_URL (optional, frontend)

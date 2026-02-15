@@ -1,178 +1,343 @@
-# LinkVault - Secure File & Text Sharing
+# LinkVault
 
-A full-stack web application for sharing text and files securely via unique, time-limited links.
-
-## Project Structure
-
-```
-linkvault/
-├── frontend/              # React + Vite + Tailwind
-├── backend/              # Node.js + Express
-├── docs/                 # Documentation and diagrams
-└── README.md
-```
+LinkVault is a full-stack secure sharing app for text and files. A user creates a vault, gets a unique share link, and can optionally apply security controls like password protection, one-time view, max views, owner delete link, and user-email allowlists.
 
 ## Tech Stack
 
 ### Frontend
-- React (with Vite)
+- React + Vite
 - Tailwind CSS
-- Axios for HTTP requests
+- Axios
+- React Router
 
 ### Backend
-- Node.js
-- Express.js
+- Node.js + Express
+- MongoDB + Mongoose
 - Multer (file uploads)
-- UUID (unique ID generation)
-
-### Database Options
-- **Recommended for beginners**: MongoDB (with Mongoose)
-- **Alternative**: PostgreSQL, MySQL, or SQLite
+- nanoid (unique IDs)
 
 ### Storage
-- Firebase Storage (for files) or local storage for development
+- Local file storage in `backend/uploads/`
 
-## Getting Started
+## Project Structure
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- MongoDB installed locally OR MongoDB Atlas account (free tier)
+```text
+linkvault/
+|---backend/
+|   |---middleware/
+|   |   |---auth.js
+|   |---models/
+|   |   |---Content.js
+|   |   |---User.js
+|   |---routes/
+|   |   |---auth.js
+|   |   |---content.js
+|   |   |---upload.js
+|   |---server.js
+|   |---package.json
+|---frontend/
+|   |---src/
+|   |   |---pages/
+|   |   |   |---AuthPage.jsx
+|   |   |   |---HomePage.jsx
+|   |   |   |---ViewPage.jsx
+|   |   |   |---DeletePage.jsx
+|   |   |   |---NotFound.jsx
+|   |   |---utils/
+|   |   |   |---auth.js
+|   |   |---App.jsx
+|   |   |---main.jsx
+|   |---package.json
+|---Takehome.pdf
+|---requirements.txt
+|---README.md
+```
 
-### Installation Steps
+## Features Implemented
 
-#### 1. Create Project Structure
+## Core Assignment Features
+- Upload either plain text or one file per vault
+- Unique, hard-to-guess share URL generation
+- Link-only access model (no global public listing)
+- Expiry-based content invalidation (default 10 minutes)
+- Text view + copy
+- File download
+- Clean API status/error handling and validations
+
+## Bonus Features Implemented
+- Password-protected vaults
+- One-time view vaults
+- Max view count restriction
+- Manual owner delete (tokenized delete link)
+- Authentication + user accounts (register/login/logout)
+- File size limit and file type validation
+- User-based access control (optional email allowlist)
+- Per-user active links list in UI
+
+## Not Implemented (Bonus)
+- Background/cron cleanup job for expired records
+  - Current cleanup is access-time driven (expired records are removed when requested)
+
+## Environment Variables
+
+Create backend `.env` at `backend/.env`:
+
+```env
+PORT=5000
+MONGODB_URI=mongodb://127.0.0.1:27017/linkvault
+FRONTEND_URL=http://localhost:5173
+```
+
+Frontend env is optional. If not set, frontend defaults API to `http://localhost:5000/api`.
+
+Optional frontend env file `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+## Dependency Installation
+
+This repository includes a `requirements.txt` manifest for quick reference of libraries, APIs, and environment requirements.
+
+Important:
+- This project is built with Node.js/React, so dependencies are installed with `npm`, not `pip`.
+- Do not run `pip install -r requirements.txt` for this project runtime setup.
+
+Install dependencies with:
+
 ```bash
-mkdir linkvault
+cd backend
+npm install
+```
+
+```bash
+cd ../frontend
+npm install
+```
+
+## Local Setup and Run
+
+1. Clone repo and enter root:
+
+```bash
+git clone <your-repo-url>
 cd linkvault
 ```
 
-#### 2. Setup Backend
-```bash
-mkdir backend
-cd backend
-npm init -y
-npm install express mongoose dotenv cors multer uuid nanoid
-npm install --save-dev nodemon
-```
+2. Install backend dependencies:
 
-#### 3. Setup Frontend
 ```bash
-cd ..
-npm create vite@latest frontend -- --template react
-cd frontend
+cd backend
 npm install
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-npm install axios react-router-dom
 ```
 
-#### 4. Configure Tailwind CSS
-Update `frontend/tailwind.config.js`:
-```javascript
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-```
+3. Install frontend dependencies:
 
-Add to `frontend/src/index.css`:
-```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
-
-## Development Workflow
-
-### Running Backend
 ```bash
-cd backend
+cd ../frontend
+npm install
+```
+
+4. Start backend (terminal 1):
+
+```bash
+cd ../backend
 npm run dev
 ```
 
-### Running Frontend
+5. Start frontend (terminal 2):
+
+```bash
+cd ../frontend
+npm run dev
+```
+
+6. Open app in browser:
+- `http://localhost:5173`
+
+## Production-style Build (Optional)
+
+1. Build frontend:
+
 ```bash
 cd frontend
-npm run dev
+npm run build
 ```
 
-## API Design (High-Level)
+2. Start backend server (serves `frontend/dist`):
 
-### Endpoints
-
-#### 1. Upload Content
-- **POST** `/api/upload`
-- Body: `{ type: 'text' | 'file', content: string, file: File, expiryTime?: Date }`
-- Response: `{ success: true, shareUrl: string, expiresAt: Date }`
-
-#### 2. Retrieve Content
-- **GET** `/api/content/:uniqueId`
-- Response: `{ type: string, content: string, downloadUrl?: string }`
-
-#### 3. Delete Content (Optional)
-- **DELETE** `/api/content/:uniqueId`
-- Response: `{ success: true }`
-
-## Database Schema
-
-### MongoDB Schema (Mongoose)
-
-```javascript
-{
-  uniqueId: String (unique, indexed),
-  type: String ('text' or 'file'),
-  content: String (for text) OR fileUrl: String (for files),
-  fileName: String (optional, for files),
-  fileSize: Number (optional),
-  createdAt: Date,
-  expiresAt: Date,
-  viewCount: Number (optional - for bonus features),
-  password: String (optional - for bonus features)
-}
+```bash
+cd ../backend
+npm start
 ```
 
-## Key Design Decisions
+3. Open:
+- `http://localhost:5000`
 
-### 1. Unique ID Generation
-- Use `nanoid` or `uuid` for generating hard-to-guess URLs
-- Example: `https://linkvault.com/abc123xyz` where `abc123xyz` is the unique ID
+## How to Use
 
-### 2. File Storage Strategy
-- **Development**: Store files locally in `backend/uploads/`
-- **Production**: Use Firebase Storage or AWS S3
-- Store only the file URL/path in database
+## 1) Register / Login
+- Open app
+- Create account or login
+- Session token is stored in browser local storage
 
-### 3. Expiry Handling
-- Store `expiresAt` timestamp in database
-- Use middleware to check expiry before serving content
-- **Bonus**: Implement a cron job to delete expired content from DB and storage
+## 2) Create a Vault
+On home page:
+- Choose `Text Vault` or `File Vault`
+- Set expiry (quick minutes)
+- Optional controls:
+  - Password
+  - Max views
+  - One-time view
+  - Allowed users (comma-separated emails)
+- Submit to generate:
+  - Share link
+  - Owner delete link
 
-### 4. Security Considerations
-- Validate file types and sizes
-- Sanitize text input
-- Use CORS properly
-- Rate limiting on upload endpoint
+## 3) Open Share Link
+- Receiver must be authenticated in LinkVault
+- If vault has password, receiver must also provide password
+- Text vault: can read and copy
+- File vault: can download
 
-## Implementation Phases
+## 4) Delete Flow
+- Creator can use `Delete Now` directly
+- Or open owner delete link:
+  - Preview content
+  - Download file (if vault is file)
+  - Delete vault
 
-1. Setup project structure
-2. Create upload endpoint (text only)
-3. Generate unique URLs
-4. Create retrieval endpoint
-5. Build basic frontend UI
-6. Implement expiry logic
+## 5) Active Links Menu
+- On home page, open `---` menu
+- View your active links
+- Copy share/delete links
+- Delete entries
+- Logout
 
-## Contributors
+## Access Rules (Current Behavior)
 
-Sayan Das - IIT Kharagpur
+A user can open/download a vault if:
+- They are authenticated, and
+- They have the share link, and
+- If password-protected: password is correct, and
+- If allowlist is configured: their email is in allowlist (owner always bypasses allowlist)
 
-## License
+A user can delete a vault if:
+- They are authenticated as owner account, and
+- They have valid delete token
 
-This is an academic project for educational purposes.
+## API Overview
+
+Base URL: `/api`
+
+### Auth
+- `POST /auth/register`
+  - Body: `{ email, password }`
+  - Returns: `{ token, user }`
+
+- `POST /auth/login`
+  - Body: `{ email, password }`
+  - Returns: `{ token, user }`
+
+- `GET /auth/me`
+  - Header: `Authorization: Bearer <token>`
+
+- `POST /auth/logout`
+  - Header: `Authorization: Bearer <token>`
+
+### Vault Create
+- `POST /upload`
+  - Header: `Authorization: Bearer <token>`
+  - FormData fields:
+    - `type`: `text` or `file`
+    - `content` (for text)
+    - `file` (for file)
+    - `expiryMinutes`
+    - Optional: `password`, `oneTimeView`, `maxViews`, `allowedUsers`
+
+### Vault Access
+- `GET /content/:uniqueId`
+  - Header: `Authorization: Bearer <token>`
+  - Optional password header: `x-vault-password`
+
+- `GET /download/:uniqueId`
+  - Header: `Authorization: Bearer <token>`
+  - Optional password header: `x-vault-password`
+
+### Owner Delete Operations
+- `GET /delete-preview/:uniqueId/:deleteToken`
+  - Header: `Authorization: Bearer <token>`
+
+- `GET /delete-download/:uniqueId/:deleteToken`
+  - Header: `Authorization: Bearer <token>`
+
+- `DELETE /content/:uniqueId`
+  - Header: `Authorization: Bearer <token>`
+  - Header: `x-delete-token`
+
+### Owner List
+- `GET /content/mine`
+  - Header: `Authorization: Bearer <token>`
+
+## File Upload Constraints
+
+- Max file size: `50 MB`
+- Allowed types (validated by extension and MIME):
+  - `txt, csv, pdf`
+  - `png, jpg, jpeg, webp, gif`
+  - `zip`
+  - `doc, docx`
+  - `xls, xlsx`
+  - `ppt, pptx`
+
+## Data Model Summary
+
+### User
+- `email` (unique)
+- `passwordHash`
+- `authTokenHash`
+- `authTokenExpiresAt`
+
+### Content
+- `uniqueId`
+- `type` (`text` or `file`)
+- `content` or file metadata (`fileUrl`, `fileName`, `fileSize`, `mimeType`)
+- `createdAt`, `expiresAt`
+- `viewCount`, `maxViews`, `oneTimeView`
+- `password` (hashed)
+- `deleteToken`
+- `ownerId`
+- `allowedUserEmails[]`
+
+## Design Decisions
+
+- MongoDB for flexible document schema and quick indexing
+- `nanoid` IDs for short, hard-to-guess share URLs
+- Local disk storage for simplicity in local setup
+- Request-time expiry cleanup to keep implementation simple
+- Token-based auth with hashed session token in DB
+- Owner delete protected by both account identity and delete token
+
+## Assumptions
+
+- Users share links out-of-band
+- Receiver can create/login to an account before opening links
+- Single backend instance with local file storage for development
+
+## Limitations
+
+- No background scheduler for automatic expiry cleanup
+- Local uploads are not durable for ephemeral/free cloud instances
+- No rate limiting or abuse throttling currently
+- No email verification/reset flow
+- In-memory UI state for some interactions (no optimistic sync layer)
+
+## Notes
+
+- Active backend entrypoint is `backend/server.js`
+- Legacy `backend/backend-*.js` files are present but not used by npm scripts
+
+## Contributor
+
+- Sayan Das
