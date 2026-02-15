@@ -73,6 +73,15 @@ const canManageAsOwner = (content, user) => {
   return String(content.ownerId) === String(user._id);
 };
 
+const canAccessContent = (content, user) => {
+  if (canManageAsOwner(content, user)) return true;
+  const allowed = Array.isArray(content.allowedUserEmails)
+    ? content.allowedUserEmails.map((email) => String(email).toLowerCase())
+    : [];
+  if (allowed.length === 0) return true;
+  return allowed.includes(String(user.email || '').toLowerCase());
+};
+
 router.get('/delete/:uniqueId/:deleteToken', async (req, res) => {
   const { uniqueId, deleteToken } = req.params;
   const rawFrontendUrl = process.env.FRONTEND_URL;
@@ -149,6 +158,10 @@ router.get('/content/:uniqueId', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Content no longer accessible' });
     }
 
+    if (!canAccessContent(content, req.user)) {
+      return res.status(403).json({ error: 'Access denied for this account' });
+    }
+
     if (!requirePasswordIfNeeded(content, req, res)) {
       return;
     }
@@ -206,6 +219,10 @@ router.get('/download/:uniqueId', requireAuth, async (req, res) => {
     if (content.isExpired()) {
       await Content.deleteOne({ uniqueId });
       return res.status(410).json({ error: 'File has expired' });
+    }
+
+    if (!canAccessContent(content, req.user)) {
+      return res.status(403).json({ error: 'Access denied for this account' });
     }
 
     if (!requirePasswordIfNeeded(content, req, res)) {

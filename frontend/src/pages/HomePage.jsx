@@ -29,6 +29,7 @@ function HomePage() {
   const [password, setPassword] = useState("");
   const [oneTimeView, setOneTimeView] = useState(false);
   const [maxViews, setMaxViews] = useState("");
+  const [allowedUsers, setAllowedUsers] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -89,6 +90,9 @@ function HomePage() {
       if (String(maxViews).trim()) {
         formData.append("maxViews", Number(maxViews));
       }
+      if (String(allowedUsers).trim()) {
+        formData.append("allowedUsers", allowedUsers.trim());
+      }
 
       if (uploadType === "text") {
         if (!textContent.trim()) {
@@ -113,6 +117,7 @@ function HomePage() {
       setPassword("");
       setOneTimeView(false);
       setMaxViews("");
+      setAllowedUsers("");
     } catch (err) {
       if (err.response?.data?.authRequired) {
         navigate("/auth", { replace: true });
@@ -250,6 +255,7 @@ function HomePage() {
               <input
                 type="file"
                 className="hidden"
+                accept=".txt,.csv,.pdf,.png,.jpg,.jpeg,.webp,.gif,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                 onChange={(e) => handleFile(e.target.files?.[0])}
               />
               <div className="space-y-3">
@@ -260,6 +266,9 @@ function HomePage() {
                   {selectedFile
                     ? `${formatBytes(selectedFile.size)} • ${selectedFile.type || "Unknown type"}`
                     : `Up to ${MAX_FILE_MB} MB`}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Allowed: txt, csv, pdf, png, jpg, jpeg, webp, gif, zip, doc, docx, xls, xlsx, ppt, pptx
                 </p>
               </div>
             </label>
@@ -336,7 +345,7 @@ function HomePage() {
           </div>
 
           <div className="lv-panel rounded-2xl p-5 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-3">
                 <label className="text-sm uppercase tracking-[0.2em] text-slate-300">
                   Optional Password
@@ -373,6 +382,25 @@ function HomePage() {
                 />
                 <p className="text-xs text-slate-400">
                   Set a cap to disable after N opens.
+                </p>
+              </div>
+
+              <div className="space-y-3 md:col-span-3">
+                <label className="text-sm uppercase tracking-[0.2em] text-slate-300">
+                  Allowed Users (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={allowedUsers}
+                  onChange={(e) => {
+                    setAllowedUsers(e.target.value);
+                    resetResult();
+                  }}
+                  placeholder="alice@mail.com, bob@mail.com"
+                  className="lv-input w-full rounded-xl px-4 py-3 text-base"
+                />
+                <p className="text-xs text-slate-400">
+                  If set, only these logged-in emails (and you) can open this vault.
                 </p>
               </div>
             </div>
@@ -467,6 +495,11 @@ function HomePage() {
               {(oneTimeView || String(maxViews).trim()) && (
                 <span className="lv-chip rounded-full px-3 py-1">
                   Remaining views: {oneTimeView ? 1 : maxViews}
+                </span>
+              )}
+              {result.accessRestricted && (
+                <span className="lv-chip rounded-full px-3 py-1">
+                  Restricted users: {result.allowedUserCount}
                 </span>
               )}
             </div>

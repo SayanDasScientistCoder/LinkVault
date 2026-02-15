@@ -64,7 +64,7 @@ function ViewPage() {
       } else if (status === 410) {
         setError("This vault has expired");
       } else if (status === 403) {
-        setError("This link is invalid or no longer accessible");
+        setError(err.response?.data?.error || "This link is invalid or no longer accessible");
       } else if (status === 401) {
         setRequiresPassword(true);
         setError(err.response?.data?.error || "Password required");
@@ -118,6 +118,8 @@ function ViewPage() {
       } else if (status === 401) {
         setRequiresPassword(true);
         setError("Password required to download");
+      } else if (status === 403) {
+        setError(err.response?.data?.error || "Access denied");
       } else {
         setError(err.response?.data?.error || "Download failed");
       }

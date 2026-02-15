@@ -61,6 +61,10 @@ const contentSchema = new mongoose.Schema({
     ref: 'User',
     default: null,
     index: true
+  },
+  allowedUserEmails: {
+    type: [String],
+    default: []
   }
 });
 
