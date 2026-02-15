@@ -84,19 +84,6 @@ function AppRoutes() {
         <span className="lv-grid" />
       </div>
       <div className="lv-content">
-        {token && user?.email && (
-          <div className="mb-4 flex items-center justify-end gap-3 lv-fade-in">
-            <span className="lv-chip rounded-full px-3 py-1 text-xs uppercase tracking-[0.2em]">
-              {user.email}
-            </span>
-            <button
-              onClick={logout}
-              className="lv-button lv-button-ghost px-4 py-2 text-xs uppercase tracking-[0.2em]"
-            >
-              Logout
-            </button>
-          </div>
-        )}
         <Routes>
           <Route
             path="/auth"
@@ -106,7 +93,7 @@ function AppRoutes() {
             path="/"
             element={
               <RequireAuth token={token}>
-                <HomePage />
+                <HomePage user={user} onLogout={logout} />
               </RequireAuth>
             }
           />

@@ -18,7 +18,7 @@ function formatBytes(bytes) {
   return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unitIndex]}`;
 }
 
-function HomePage() {
+function HomePage({ user, onLogout }) {
   const navigate = useNavigate();
   const [uploadType, setUploadType] = useState("text");
   const [textContent, setTextContent] = useState("");
@@ -40,6 +40,7 @@ function HomePage() {
   const [myLinks, setMyLinks] = useState([]);
   const [linksLoading, setLinksLoading] = useState(true);
   const [linksError, setLinksError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const canSubmit = useMemo(() => {
     if (loading) return false;
@@ -238,6 +239,159 @@ function HomePage() {
 
   return (
     <div className="lv-shell space-y-10">
+      <div className="flex justify-end relative">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="lv-button lv-button-ghost px-4 py-2 text-sm"
+            aria-label="Open menu"
+          >
+            ---
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-2 z-30 w-[min(92vw,360px)]">
+              <div className="lv-card rounded-2xl p-5 space-y-5 lv-rise max-h-[70vh] overflow-y-auto overflow-x-hidden">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    Menu
+                  </p>
+                  <h2 className="text-2xl md:text-3xl font-bold lv-gradient-text">
+                    Account & Active Links
+                  </h2>
+                  {user?.email && (
+                    <p className="mt-2 text-sm text-slate-300">{user.email}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={loadMyLinks}
+                    className="lv-button lv-button-ghost px-4 py-2 text-xs uppercase tracking-[0.2em]"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen(false)}
+                    className="lv-button lv-button-ghost px-4 py-2 text-xs uppercase tracking-[0.2em]"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              {linksLoading && (
+                <p className="text-sm text-slate-300">Loading your active links...</p>
+              )}
+
+              {!linksLoading && linksError && (
+                <p className="text-sm text-red-300">{linksError}</p>
+              )}
+
+              {!linksLoading && !linksError && myLinks.length === 0 && (
+                <p className="text-sm text-slate-400">
+                  No active links yet. Create one on the main page.
+                </p>
+              )}
+
+              {!linksLoading && myLinks.length > 0 && (
+                <div className="space-y-4">
+                  {myLinks.map((link) => (
+                    <div
+                      key={link.uniqueId}
+                      className="lv-panel rounded-2xl p-4 space-y-3 border border-slate-600/50 overflow-hidden"
+                    >
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-200">
+                            {link.type === "text" ? "Text Vault" : "File Vault"}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            Expires: {new Date(link.expiresAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
+                          {link.hasPassword && (
+                            <span className="lv-chip rounded-full px-3 py-1">
+                              Password
+                            </span>
+                          )}
+                          {link.oneTimeView && (
+                            <span className="lv-chip rounded-full px-3 py-1">
+                              One-time
+                            </span>
+                          )}
+                          {link.maxViews && (
+                            <span className="lv-chip rounded-full px-3 py-1">
+                              Views: {link.viewCount}/{link.maxViews}
+                            </span>
+                          )}
+                          {link.accessRestricted && (
+                            <span className="lv-chip rounded-full px-3 py-1">
+                              Users: {link.allowedUserCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div
+                        className="lv-input w-full rounded-xl px-4 py-3 text-xs font-mono truncate"
+                        title={link.shareUrl}
+                      >
+                        {link.shareUrl}
+                      </div>
+
+                      <div className="grid gap-2">
+                        <a
+                          href={link.shareUrl}
+                          className="lv-button lv-button-primary px-4 py-2 text-xs text-slate-900 text-center"
+                        >
+                          Open
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => copyLinkValue(link.shareUrl)}
+                          className="lv-button lv-button-ghost px-4 py-2 text-xs"
+                        >
+                          Copy Share Link
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => copyLinkValue(link.deleteUrl)}
+                          className="lv-button lv-button-ghost px-4 py-2 text-xs"
+                        >
+                          Copy Delete Link
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteFromList(link.uniqueId, link.deleteToken)}
+                          className="lv-button lv-button-primary px-4 py-2 text-xs text-slate-900"
+                        >
+                          Delete Now
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="lv-button lv-button-primary px-5 py-3 text-sm text-slate-900"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+          )}
+        </div>
+      </div>
+
       <header className="text-center lv-fade-in">
         <div className="inline-flex items-center gap-3 rounded-full px-4 py-2 lv-chip text-xs uppercase tracking-[0.2em]">
           Secure sharing • Instant access
@@ -599,116 +753,6 @@ function HomePage() {
                 <p className="text-xs text-amber-200">{deleteStatus}</p>
               )}
             </div>
-          </div>
-        )}
-      </div>
-
-      <div className="lv-card rounded-[32px] p-6 md:p-10 space-y-6 lv-rise">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-2xl md:text-3xl font-bold lv-gradient-text">
-            My Active Links
-          </h2>
-          <button
-            type="button"
-            onClick={loadMyLinks}
-            className="lv-button lv-button-ghost px-4 py-2 text-xs uppercase tracking-[0.2em]"
-          >
-            Refresh
-          </button>
-        </div>
-
-        {linksLoading && (
-          <p className="text-sm text-slate-300">Loading your active links...</p>
-        )}
-
-        {!linksLoading && linksError && (
-          <p className="text-sm text-red-300">{linksError}</p>
-        )}
-
-        {!linksLoading && !linksError && myLinks.length === 0 && (
-          <p className="text-sm text-slate-400">
-            No active links yet. Create one above.
-          </p>
-        )}
-
-        {!linksLoading && myLinks.length > 0 && (
-          <div className="space-y-4">
-            {myLinks.map((link) => (
-              <div
-                key={link.uniqueId}
-                className="lv-panel rounded-2xl p-4 space-y-3 border border-slate-600/50"
-              >
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-200">
-                      {link.type === "text" ? "Text Vault" : "File Vault"}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      Expires: {new Date(link.expiresAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
-                    {link.hasPassword && (
-                      <span className="lv-chip rounded-full px-3 py-1">
-                        Password
-                      </span>
-                    )}
-                    {link.oneTimeView && (
-                      <span className="lv-chip rounded-full px-3 py-1">
-                        One-time
-                      </span>
-                    )}
-                    {link.maxViews && (
-                      <span className="lv-chip rounded-full px-3 py-1">
-                        Views: {link.viewCount}/{link.maxViews}
-                      </span>
-                    )}
-                    {link.accessRestricted && (
-                      <span className="lv-chip rounded-full px-3 py-1">
-                        Users: {link.allowedUserCount}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <input
-                  type="text"
-                  readOnly
-                  value={link.shareUrl}
-                  className="lv-input w-full rounded-xl px-4 py-3 text-xs font-mono"
-                />
-
-                <div className="flex flex-wrap gap-2">
-                  <a
-                    href={link.shareUrl}
-                    className="lv-button lv-button-primary px-4 py-2 text-xs text-slate-900"
-                  >
-                    Open
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => copyLinkValue(link.shareUrl)}
-                    className="lv-button lv-button-ghost px-4 py-2 text-xs"
-                  >
-                    Copy Share Link
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => copyLinkValue(link.deleteUrl)}
-                    className="lv-button lv-button-ghost px-4 py-2 text-xs"
-                  >
-                    Copy Delete Link
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteFromList(link.uniqueId, link.deleteToken)}
-                    className="lv-button lv-button-primary px-4 py-2 text-xs text-slate-900"
-                  >
-                    Delete Now
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
         )}
       </div>
