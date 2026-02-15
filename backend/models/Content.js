@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Database schema definition for vault content records (text/file).
+// Captures access controls, expiry lifecycle, and owner metadata.
 const contentSchema = new mongoose.Schema({
   uniqueId: {
     type: String,

@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Database schema definition for application users.
+// Stores account credentials plus hashed session token metadata.
 const userSchema = new mongoose.Schema(
   {
     email: {

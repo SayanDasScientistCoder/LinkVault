@@ -53,6 +53,15 @@ linkvault/
 |---README.md
 ```
 
+## Database Schema / Model Definitions
+
+Database models are defined in:
+- `backend/models/User.js`
+- `backend/models/Content.js`
+
+Detailed field-by-field schema documentation is available in:
+- `docs/database-schema.md`
+
 ## Features Implemented
 
 ## Core Assignment Features
@@ -116,7 +125,12 @@ cd ../frontend
 npm install
 ```
 
-## Local Setup and Run
+## Setup Instructions
+
+Prerequisites:
+- Node.js 18+ and npm
+- A running MongoDB instance
+- `backend/uploads/` directory present (already included in this repo)
 
 1. Clone repo and enter root:
 
@@ -266,6 +280,9 @@ Base URL: `/api`
   - Optional password header: `x-vault-password`
 
 ### Owner Delete Operations
+- `GET /delete/:uniqueId/:deleteToken`
+  - Public redirect endpoint to frontend delete page
+
 - `GET /delete-preview/:uniqueId/:deleteToken`
   - Header: `Authorization: Bearer <token>`
 
@@ -319,19 +336,22 @@ Base URL: `/api`
 - Token-based auth with hashed session token in DB
 - Owner delete protected by both account identity and delete token
 
-## Assumptions
+## Assumptions and Limitations
+
+### Assumptions
 
 - Users share links out-of-band
 - Receiver can create/login to an account before opening links
 - Single backend instance with local file storage for development
 
-## Limitations
+### Limitations
 
 - No background scheduler for automatic expiry cleanup
 - Local uploads are not durable for ephemeral/free cloud instances
 - No rate limiting or abuse throttling currently
 - No email verification/reset flow
 - In-memory UI state for some interactions (no optimistic sync layer)
+- Frontend shows a "Schedule Date/Time" expiry option, but backend currently enforces `expiryMinutes` only
 
 ## Notes
 
