@@ -82,6 +82,37 @@ const canAccessContent = (content, user) => {
   return allowed.includes(String(user.email || '').toLowerCase());
 };
 
+router.get('/content/mine', requireAuth, async (req, res) => {
+  try {
+    const items = await Content.find({ ownerId: req.user._id }).sort({ createdAt: -1 });
+    const rawFrontendUrl = process.env.FRONTEND_URL;
+    const frontendBase = rawFrontendUrl
+      ? rawFrontendUrl.replace(/\/+$/, '')
+      : `${req.protocol}://${req.get('host')}`;
+
+    const links = items.map((item) => ({
+      uniqueId: item.uniqueId,
+      type: item.type,
+      createdAt: item.createdAt,
+      expiresAt: item.expiresAt,
+      viewCount: item.viewCount,
+      maxViews: item.maxViews,
+      oneTimeView: item.oneTimeView,
+      hasPassword: Boolean(item.password),
+      accessRestricted: Array.isArray(item.allowedUserEmails) && item.allowedUserEmails.length > 0,
+      allowedUserCount: Array.isArray(item.allowedUserEmails) ? item.allowedUserEmails.length : 0,
+      shareUrl: `${frontendBase}/view/${item.uniqueId}`,
+      deleteUrl: `${frontendBase}/delete/${item.uniqueId}/${encodeURIComponent(item.deleteToken || '')}`,
+      deleteToken: item.deleteToken
+    }));
+
+    return res.json({ success: true, links });
+  } catch (error) {
+    console.error('List links error:', error);
+    return res.status(500).json({ error: 'Failed to load your links' });
+  }
+});
+
 router.get('/delete/:uniqueId/:deleteToken', async (req, res) => {
   const { uniqueId, deleteToken } = req.params;
   const rawFrontendUrl = process.env.FRONTEND_URL;

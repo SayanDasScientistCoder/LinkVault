@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -37,6 +37,9 @@ function HomePage() {
   const [deleteCopied, setDeleteCopied] = useState(false);
   const [deleteStatus, setDeleteStatus] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [myLinks, setMyLinks] = useState([]);
+  const [linksLoading, setLinksLoading] = useState(true);
+  const [linksError, setLinksError] = useState("");
 
   const canSubmit = useMemo(() => {
     if (loading) return false;
@@ -50,6 +53,27 @@ function HomePage() {
     setDeleteCopied(false);
     setDeleteStatus("");
   };
+
+  const loadMyLinks = async () => {
+    setLinksLoading(true);
+    setLinksError("");
+    try {
+      const response = await axios.get(`${API_URL}/content/mine`);
+      setMyLinks(response.data?.links || []);
+    } catch (err) {
+      if (err.response?.data?.authRequired) {
+        navigate("/auth", { replace: true });
+      } else {
+        setLinksError(err.response?.data?.error || "Failed to load active links");
+      }
+    } finally {
+      setLinksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMyLinks();
+  }, []);
 
   const handleFile = (file) => {
     if (!file) return;
@@ -118,6 +142,7 @@ function HomePage() {
       setOneTimeView(false);
       setMaxViews("");
       setAllowedUsers("");
+      loadMyLinks();
     } catch (err) {
       if (err.response?.data?.authRequired) {
         navigate("/auth", { replace: true });
@@ -172,11 +197,41 @@ function HomePage() {
       });
       setDeleteStatus("Vault deleted successfully.");
       setResult((prev) => (prev ? { ...prev, deleted: true } : prev));
+      loadMyLinks();
     } catch (err) {
       if (err.response?.data?.authRequired) {
         navigate("/auth", { replace: true });
       } else {
         setDeleteStatus(err.response?.data?.error || "Delete failed.");
+      }
+    }
+  };
+
+  const copyLinkValue = async (value) => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (err) {
+      setLinksError("Copy failed. Please copy manually.");
+    }
+  };
+
+  const deleteFromList = async (uniqueId, deleteToken) => {
+    const confirmed = window.confirm("Delete this vault now? This cannot be undone.");
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`${API_URL}/content/${uniqueId}`, {
+        headers: { "x-delete-token": deleteToken },
+      });
+      setMyLinks((prev) => prev.filter((item) => item.uniqueId !== uniqueId));
+      if (result?.uniqueId === uniqueId) {
+        setResult((prev) => (prev ? { ...prev, deleted: true } : prev));
+      }
+    } catch (err) {
+      if (err.response?.data?.authRequired) {
+        navigate("/auth", { replace: true });
+      } else {
+        setLinksError(err.response?.data?.error || "Delete failed");
       }
     }
   };
@@ -544,6 +599,116 @@ function HomePage() {
                 <p className="text-xs text-amber-200">{deleteStatus}</p>
               )}
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="lv-card rounded-[32px] p-6 md:p-10 space-y-6 lv-rise">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-2xl md:text-3xl font-bold lv-gradient-text">
+            My Active Links
+          </h2>
+          <button
+            type="button"
+            onClick={loadMyLinks}
+            className="lv-button lv-button-ghost px-4 py-2 text-xs uppercase tracking-[0.2em]"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {linksLoading && (
+          <p className="text-sm text-slate-300">Loading your active links...</p>
+        )}
+
+        {!linksLoading && linksError && (
+          <p className="text-sm text-red-300">{linksError}</p>
+        )}
+
+        {!linksLoading && !linksError && myLinks.length === 0 && (
+          <p className="text-sm text-slate-400">
+            No active links yet. Create one above.
+          </p>
+        )}
+
+        {!linksLoading && myLinks.length > 0 && (
+          <div className="space-y-4">
+            {myLinks.map((link) => (
+              <div
+                key={link.uniqueId}
+                className="lv-panel rounded-2xl p-4 space-y-3 border border-slate-600/50"
+              >
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-200">
+                      {link.type === "text" ? "Text Vault" : "File Vault"}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Expires: {new Date(link.expiresAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
+                    {link.hasPassword && (
+                      <span className="lv-chip rounded-full px-3 py-1">
+                        Password
+                      </span>
+                    )}
+                    {link.oneTimeView && (
+                      <span className="lv-chip rounded-full px-3 py-1">
+                        One-time
+                      </span>
+                    )}
+                    {link.maxViews && (
+                      <span className="lv-chip rounded-full px-3 py-1">
+                        Views: {link.viewCount}/{link.maxViews}
+                      </span>
+                    )}
+                    {link.accessRestricted && (
+                      <span className="lv-chip rounded-full px-3 py-1">
+                        Users: {link.allowedUserCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  readOnly
+                  value={link.shareUrl}
+                  className="lv-input w-full rounded-xl px-4 py-3 text-xs font-mono"
+                />
+
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={link.shareUrl}
+                    className="lv-button lv-button-primary px-4 py-2 text-xs text-slate-900"
+                  >
+                    Open
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => copyLinkValue(link.shareUrl)}
+                    className="lv-button lv-button-ghost px-4 py-2 text-xs"
+                  >
+                    Copy Share Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyLinkValue(link.deleteUrl)}
+                    className="lv-button lv-button-ghost px-4 py-2 text-xs"
+                  >
+                    Copy Delete Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteFromList(link.uniqueId, link.deleteToken)}
+                    className="lv-button lv-button-primary px-4 py-2 text-xs text-slate-900"
+                  >
+                    Delete Now
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
