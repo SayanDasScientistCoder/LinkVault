@@ -211,6 +211,32 @@ router.get('/download/:uniqueId', async (req, res) => {
   }
 });
 
+router.get('/delete-download/:uniqueId/:deleteToken', async (req, res) => {
+  try {
+    const { uniqueId, deleteToken } = req.params;
+    const content = await Content.findOne({ uniqueId });
+
+    if (!content || content.type !== 'file') {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    if (content.isExpired()) {
+      await Content.deleteOne({ uniqueId });
+      return res.status(410).json({ error: 'File has expired' });
+    }
+
+    if (!verifyDeleteToken(content, deleteToken)) {
+      return res.status(403).json({ error: 'Invalid delete token' });
+    }
+
+    const filePath = path.join(__dirname, '..', content.fileUrl);
+    return res.download(filePath, content.fileName);
+  } catch (error) {
+    console.error('Delete download error:', error);
+    return res.status(500).json({ error: 'Download failed' });
+  }
+});
+
 router.delete('/content/:uniqueId', async (req, res) => {
   try {
     const { uniqueId } = req.params;

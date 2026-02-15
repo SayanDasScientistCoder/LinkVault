@@ -21,6 +21,7 @@ function DeletePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [error, setError] = useState("");
   const [vault, setVault] = useState(null);
@@ -65,6 +66,29 @@ function DeletePage() {
       setError(err.response?.data?.error || "Delete failed.");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    setError("");
+    try {
+      const response = await axios.get(
+        `${API_URL}/delete-download/${encodeURIComponent(uniqueId)}/${encodeURIComponent(deleteToken)}`,
+        { responseType: "blob" }
+      );
+      const blobUrl = window.URL.createObjectURL(response.data);
+      const anchor = document.createElement("a");
+      anchor.href = blobUrl;
+      anchor.download = vault?.fileName || "download";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      setError(err.response?.data?.error || "Download failed.");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -154,6 +178,13 @@ function DeletePage() {
             <p className="text-xs text-slate-400">
               {formatBytes(vault.fileSize)} • {vault.mimeType || "Unknown type"}
             </p>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="lv-button lv-button-ghost px-5 py-2 text-sm"
+            >
+              {downloading ? "Preparing..." : "Download File"}
+            </button>
           </div>
         )}
 
