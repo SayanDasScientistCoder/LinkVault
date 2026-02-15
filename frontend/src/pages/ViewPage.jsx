@@ -223,7 +223,7 @@ function ViewPage() {
 
         {content?.type === "text" && (
           <>
-            <pre className="lv-panel rounded-2xl p-4 text-sm text-slate-200 whitespace-pre-wrap break-words overflow-auto min-h-[45vh] max-h-[70vh]">
+            <pre className="lv-panel rounded-3xl p-4 text-sm text-slate-200 whitespace-pre-wrap break-words overflow-auto min-h-[45vh] max-h-[70vh]">
               {content.content}
             </pre>
             <button
