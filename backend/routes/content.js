@@ -47,6 +47,47 @@ const requirePasswordIfNeeded = (content, req, res) => {
   return true;
 };
 
+const getDeleteTokenFromRequest = (req) => {
+  const headerToken = req.headers['x-delete-token'];
+  if (headerToken) return String(headerToken);
+  if (req.query && req.query.deleteToken) return String(req.query.deleteToken);
+  return '';
+};
+
+const verifyDeleteToken = (content, provided) => {
+  if (!content.deleteToken) return false;
+  if (!provided) return false;
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(String(content.deleteToken)),
+      Buffer.from(String(provided))
+    );
+  } catch (err) {
+    return false;
+  }
+};
+
+router.get('/delete/:uniqueId/:deleteToken', async (req, res) => {
+  try {
+    const { uniqueId, deleteToken } = req.params;
+    const content = await Content.findOne({ uniqueId });
+
+    if (!content) {
+      return res.status(404).send('Content not found or already deleted');
+    }
+
+    if (!verifyDeleteToken(content, deleteToken)) {
+      return res.status(403).send('Invalid delete token');
+    }
+
+    await Content.deleteOne({ uniqueId });
+    return res.status(200).send('Vault deleted successfully');
+  } catch (error) {
+    console.error('Delete link error:', error);
+    return res.status(500).send('Delete failed');
+  }
+});
+
 router.get('/content/:uniqueId', async (req, res) => {
   try {
     const { uniqueId } = req.params;
@@ -140,6 +181,17 @@ router.get('/download/:uniqueId', async (req, res) => {
 router.delete('/content/:uniqueId', async (req, res) => {
   try {
     const { uniqueId } = req.params;
+    const content = await Content.findOne({ uniqueId });
+
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    const providedToken = getDeleteTokenFromRequest(req);
+    if (!verifyDeleteToken(content, providedToken)) {
+      return res.status(403).json({ error: 'Invalid or missing delete token' });
+    }
+
     const result = await Content.deleteOne({ uniqueId });
 
     if (result.deletedCount === 0) {

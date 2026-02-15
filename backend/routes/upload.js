@@ -48,13 +48,15 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }
 
     const uniqueId = nanoid(10);
+    const deleteToken = nanoid(24);
     const expiryTime = parseInt(expiryMinutes) || 10;
     const expiresAt = new Date(Date.now() + expiryTime * 60 * 1000);
 
     const contentData = {
       uniqueId,
       type,
-      expiresAt
+      expiresAt,
+      deleteToken
     };
 
     if (password && String(password).trim()) {
@@ -88,11 +90,15 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const frontendBase = rawFrontendUrl
       ? rawFrontendUrl.replace(/\/+$/, '')
       : `${req.protocol}://${req.get('host')}`;
+    const backendBase = `${req.protocol}://${req.get('host')}`;
     const shareUrl = `${frontendBase}/view/${uniqueId}`;
+    const deleteUrl = `${backendBase}/api/delete/${uniqueId}/${encodeURIComponent(deleteToken)}`;
 
     res.status(201).json({
       success: true,
       shareUrl,
+      deleteUrl,
+      deleteToken,
       uniqueId,
       expiresAt,
       type

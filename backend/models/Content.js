@@ -51,6 +51,10 @@ const contentSchema = new mongoose.Schema({
   oneTimeView: {
     type: Boolean,
     default: false
+  },
+  deleteToken: {
+    type: String,
+    default: null
   }
 });
 
